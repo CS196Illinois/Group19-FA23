@@ -1,6 +1,6 @@
-# Group TEAM_NUMBER
+# Group 19
 
-Group Name: TEAM_NAME
+Group Name: Six of a Kind
 
 [MVP Link](https://docs.google.com/document/d/1yZKVuqTiFcFcitqgaLlTCqy4n_XBF2h5jMwocm9LIZM/edit)
 
