@@ -10,7 +10,7 @@ random_stocks = random.sample(stock_list, 10)
 # The player selects three stocks, and then picks how much to invest in each 
 # They also select one of three models
 
-model = None
+selected_model = None
 # Load the model the player selected 
 # if model_choice == BNN:
     # model = load_model('model_file')
@@ -26,16 +26,14 @@ def calculate_gain():
     # for a stock, get a db from yfinance
     # then take the average of several opening prices (since this is when most traders start)
     # account for tolerance (2%), then you get initial_investment
-    # final_price is the predicted final price after however long the game runs
+    # final_price is the predicted final price after however long the game runs using model.predict()
     # return the result of formula
     pass
 
 three_best_stocks = []
-def find_optimal_stocks():
-    # for stock in random_stocks:
-        # gain = calculate_gain()
-        # three_best_stocks.append(gain)
-    # three_best_stocks = sorted(three_best_stocks)[0:3]
-    pass
-    
+# for stock in random_stocks:
+    # gain = calculate_gain()
+    # three_best_stocks.append(gain)
+# three_best_stocks = sorted(three_best_stocks)[0:3]
 
+# then the model gains are compared to the player gains
