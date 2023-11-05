@@ -1,4 +1,3 @@
-import h5py
 import math
 import numpy as np
 import pandas as pd
@@ -24,7 +23,7 @@ class StockUtilities:
         original = original.history(period=start)
         original = original.filter(['Close'])
         original = original.reset_index(drop=False)
-        original = original.loc[1:]
+        original = original.loc[:len(original) - 1]
         return original
     
     @staticmethod
