@@ -1,10 +1,11 @@
+# Import necessary libraries
 import math
 import numpy as np
 import pandas as pd
 import yfinance as yf
 import streamlit as st
 from datetime import timedelta
-from keras.optimizers import Adam
+from keras.optimizers.legacy import Adam
 from keras.models import Sequential
 import database_operations as db_ops
 from keras.layers import LSTM, Dense
@@ -35,6 +36,8 @@ class StockUtilities:
         df = df.filter(['Return'])
         df = df.dropna()
         df = df.reset_index(drop=True)
+        # new_rows = pd.DataFrame({'Return': [6.5, -4.5, -1.1, 3.4]})
+        # df = pd.concat([new_rows, df], ignore_index=True)
         return df
     
     @staticmethod
@@ -191,23 +194,3 @@ class OldStock(StockUtilities):
             model.fit(self.train_dataX, self.train_dataY, epochs=5, batch_size=12, verbose=0)
 
         return model
-
-
-# Example of how to implement using Streamlit
-st.title('Stock Price Prediction')
-ticker = st.text_input('Enter Stock Ticker Symbol', 'AAPL')
-n_future = st.number_input('Enter Number of Days to Predict', 10)
-
-if st.button("Submit"):
-    stock = None
-    in_db = db_ops.check_if_exists(f'{ticker}.h5')
-    if in_db:
-        stock = OldStock(ticker, n_future)
-    else:
-        stock = NewStock(ticker, n_future)
-    model = stock.get_model()
-    model = stock.fit_model(model)
-    db_ops.save_model_to_db(model, f'{ticker}.h5', in_db, stock.now_index)
-    raw_pred = stock.predict(model, stock.test_data)
-    merged_df = stock.reshape(raw_pred, stock.scaler, stock.scaled_data, stock.original)
-    stock.display_predictions(stock.original, stock.n_future, merged_df)
