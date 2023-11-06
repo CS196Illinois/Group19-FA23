@@ -43,7 +43,7 @@ async def predict_stock_price(request_data: StockPredictionRequest):
     model = stock.fit_model(model)
     db_ops.save_model_to_db(model, f'{ticker}.h5', in_db, stock.now_index)
     raw_pred = stock.predict(model, stock.test_data)
-    merged_df = stock.reshape(raw_pred, stock.scaler, stock.scaled_data, stock.original)
+    merged_df = stock.reshape(raw_pred, stock.scaler, stock.scaled_data, stock.original, n_future)
 
     response_data = StockPredictionResponse.from_df_to_json(merged_df=merged_df, original=stock.original)
     return response_data.to_dict()

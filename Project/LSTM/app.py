@@ -5,7 +5,7 @@ import requests
 
 st.title('Stock Price Prediction')
 ticker = st.text_input('Enter Stock Ticker Symbol', 'AAPL')
-n_future = st.number_input('Enter Number of Days to Predict', 10)
+n_future = st.number_input('Enter Number of Days to Predict', 1)
 
 if st.button("Submit"):
     response = requests.post("http://127.0.0.1:8000/predict/", json={"ticker": ticker, "n_future": n_future})

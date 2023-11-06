@@ -36,8 +36,6 @@ class StockUtilities:
         df = df.filter(['Return'])
         df = df.dropna()
         df = df.reset_index(drop=True)
-        # new_rows = pd.DataFrame({'Return': [6.5, -4.5, -1.1, 3.4]})
-        # df = pd.concat([new_rows, df], ignore_index=True)
         return df
     
     @staticmethod
@@ -84,7 +82,7 @@ class StockUtilities:
     
     @staticmethod
     # Reshape predictions for plotting
-    def reshape(raw_pred, scaler, scaled_data, original):
+    def reshape(raw_pred, scaler, scaled_data, original, n_future):
         original_copy = original.copy()
         original_copy.index = original_copy['Date']
         original_copy = original_copy.filter(['Close'])
@@ -103,7 +101,7 @@ class StockUtilities:
         predictions.index = predictions.index + original.index[-1]
 
         pickup = pd.to_datetime(original_copy.index[-1])
-        date_range = [pickup + timedelta(days=i) for i in range(0, 11)]
+        date_range = [pickup + timedelta(days=i) for i in range(0, n_future + 1)]
         predictions.index = date_range
         predictions.index = predictions.index.strftime('%Y-%m-%d')
 
