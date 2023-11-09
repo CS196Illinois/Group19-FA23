@@ -1,3 +1,4 @@
+from io import StringIO
 import pandas as pd
 import streamlit as st
 import model as m
@@ -8,8 +9,8 @@ def fetch_data(ticker: str, n_future: int, model_type: str | None) -> tuple[pd.D
     if response.status_code != 200:
         st.error("Error fetching data from API")
     response_data = response.json()
-    merged_df = pd.read_json(response_data['json_merged_df'], orient='split')
-    original = pd.read_json(response_data['json_original_df'], orient='split')
+    merged_df = pd.read_json(StringIO(response_data['json_merged_df']), orient='split')
+    original = pd.read_json(StringIO(response_data['json_original_df']), orient='split')
     return merged_df, original
 
 
