@@ -93,7 +93,7 @@ class StockUtilities:
         original_copy = original_copy.filter(['Close'])
         original_copy.index = original_copy.index.strftime('%Y-%m-%d')
 
-        raw_pred = np.repeat(raw_pred, scaled_data.shape[1], axis=1)
+        # raw_pred = np.repeat(raw_pred, scaled_data.shape[1], axis=1)
         predictions: np.ndarray | pd.DataFrame = scaler.inverse_transform(raw_pred)[:,0]
 
         last_price: float = original['Close'][original.index[-1]]
