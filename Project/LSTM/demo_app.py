@@ -23,4 +23,4 @@ if model_type == "Bidirectional LSTM":
 
 if st.button("Submit"):
     merged_df, original = fetch_data(ticker, int(n_future), model_type)
-    st.pyplot(m.StockUtilities.display_predictions(original, int(n_future), merged_df))
+    st.plotly_chart(m.StockUtilities.display_predictions(original, int(n_future), merged_df))

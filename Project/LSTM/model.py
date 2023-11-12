@@ -6,6 +6,7 @@ from datetime import timedelta
 from keras.optimizers import Adam
 from keras.models import Sequential
 import database_operations as db_ops
+import plotly.graph_objects as go
 from keras.layers import LSTM, Dense, GRU, Bidirectional
 from matplotlib import pyplot as plt
 from matplotlib import dates as mdates
@@ -120,17 +121,19 @@ class StockUtilities:
         start = math.ceil((original.index[-1] - n_future)  * 0.975)
         end = len(original)
 
-        plt.title('Predicted Stock Price')
-        plt.xlabel('Date')
-        plt.ylabel('Close Price')
-        plt.plot(merged_df.index[start:end], merged_df['Close'][start:end], label='Predicted')
-        plt.plot(merged_df.index[end - 1:], merged_df['Predicted'][end - 1:], label='Actual')
+        trace1 = go.Scatter(x=merged_df.index[start:end], y=merged_df['Close'][start:end], mode='lines+markers', name='Actual', line=dict(color='blue'))
+        trace2 = go.Scatter(x=merged_df.index[end - 1:], y=merged_df['Predicted'][end - 1:], mode='lines+markers', name='Predicted', line=dict(color='red'))
 
-        plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=8))
-        plt.xticks(fontsize=8)
-        plt.xticks(rotation=45)
+        # Create the layout
+        layout = go.Layout(title='Predicted Stock Price', 
+                           xaxis=dict(title='Date'), 
+                           yaxis=dict(title='Close Price'),
+                           )
 
-        return plt
+        # Create the figure
+        fig = go.Figure(data=[trace1, trace2], layout=layout)
+
+        return fig
 
 
 # Class for new stocks that are not in the database
