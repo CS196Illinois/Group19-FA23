@@ -2,6 +2,7 @@ import math
 import numpy as np
 import pandas as pd
 import yfinance as yf
+import tensorflow as tf
 from datetime import timedelta
 from keras.optimizers import Adam
 from keras.models import Sequential
@@ -48,7 +49,7 @@ class StockUtilities:
     
     @staticmethod
     # Get training data for LSTM model
-    def get_training_data(scaled_data: np.ndarray, future: int, past: int) -> tuple[np.ndarray, np.ndarray]:
+    def get_training_data(scaled_data: np.ndarray, future: int, past: int) -> tuple[tf.Tensor, tf.Tensor]:
         n_future: int = future
         n_past: int = past
         split: int = len(scaled_data) - n_future
@@ -61,7 +62,7 @@ class StockUtilities:
 
         train_X: np.ndarray
         train_Y: np.ndarray
-        train_X, train_Y = np.array(trainX), np.array(trainY)
+        train_X, train_Y = tf.convert_to_tensor(np.array(trainX)), tf.convert_to_tensor(np.array(trainY))
         return train_X, train_Y
 
     @staticmethod
@@ -77,9 +78,11 @@ class StockUtilities:
         return test_X
     
     @staticmethod
+    @tf.function
     # Predict future returns
     def predict(model: Sequential, test_data: np.ndarray) -> np.ndarray:
-        raw_predictions: np.ndarray = model.predict(test_data)
+        tensor_test_data: tf.Tensor = tf.convert_to_tensor(test_data, dtype=tf.float64)
+        raw_predictions: np.ndarray = model(tensor_test_data)
         return raw_predictions
     
     @staticmethod
@@ -143,35 +146,35 @@ class NewStock(StockUtilities):
         self.split: int = len(self.scaled_data) - future
         self.n_future: int = future
         self.n_past: int = 45
-        self.train_dataX: np.ndarray
-        self.train_dataY: np.ndarray
+        self.train_dataX: tf.Tensor
+        self.train_dataY: tf.Tensor
         self.train_dataX, self.train_dataY = self.get_training_data(self.scaled_data, self.n_future, self.n_past)
-        self.test_data: np.ndarray = self.get_testing_data(self.scaled_data, self.n_past, self.split)
+        self.test_data: tf.Tensor = self.get_testing_data(self.scaled_data, self.n_past, self.split)
     
     # Get model for predictions
-    def get_model(self, type: str) -> Sequential:
+    def get_model(self, type: str | None) -> Sequential:
         model: Sequential = Sequential()
         if type == 'LSTM':
-            model.add(LSTM(64, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1)))
-            model.add(LSTM(32, activation='tanh', return_sequences=False))
+            model.add(LSTM(5, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1)))
+            model.add(LSTM(2, activation='tanh', return_sequences=False))
             model.add(Dense(self.train_dataY.shape[1]))
             model.compile(optimizer='adam', loss='mse')
         elif type == 'GRU':
-            model.add(GRU(64, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1)))
-            model.add(GRU(32, activation='tanh', return_sequences=False))
+            model.add(GRU(5, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1)))
+            model.add(GRU(2, activation='tanh', return_sequences=False))
             model.add(Dense(self.train_dataY.shape[1]))
             model.compile(optimizer='adam', loss='mse')
         else:
             self.train_dataX = np.expand_dims(self.train_dataX, axis=-1)
-            model.add(Bidirectional(LSTM(64, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1))))
-            model.add(Bidirectional(LSTM(32, activation='tanh', return_sequences=False)))
+            model.add(Bidirectional(LSTM(5, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1))))
+            model.add(Bidirectional(LSTM(2, activation='tanh', return_sequences=False)))
             model.add(Dense(self.train_dataY.shape[1]))
             model.compile(optimizer='adam', loss='mse')
         return model
     
     # Fit model to training data
     def fit_model(self, model: Sequential) -> Sequential:
-        model.fit(self.train_dataX, self.train_dataY, epochs=48, batch_size=10, verbose=0)
+        model.fit(self.train_dataX, self.train_dataY, epochs=4, batch_size=10, verbose=0)
         return model
     
 
@@ -190,10 +193,10 @@ class OldStock(StockUtilities):
         self.scaled_data: np.ndarray
         self.scaler, self.scaled_data = self.scale_data(self.df)
         self.split: int = len(self.scaled_data) - n_future
-        self.train_dataX: np.ndarray
-        self.train_dataY: np.ndarray
+        self.train_dataX: tf.Tensor
+        self.train_dataY: tf.Tensor
         self.train_dataX, self.train_dataY = self.get_training_data(self.scaled_data, n_future, self.n_past)
-        self.test_data: np.ndarray = self.get_testing_data(self.scaled_data, self.n_past, self.split)
+        self.test_data: tf.Tensor = self.get_testing_data(self.scaled_data, self.n_past, self.split)
 
 
     # Retrieve model from database
