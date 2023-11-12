@@ -8,8 +8,6 @@ from keras.models import Sequential
 import database_operations as db_ops
 import plotly.graph_objects as go
 from keras.layers import LSTM, Dense, GRU, Bidirectional
-from matplotlib import pyplot as plt
-from matplotlib import dates as mdates
 from sklearn.preprocessing import StandardScaler
 from keras.optimizers.schedules import PiecewiseConstantDecay
 
@@ -19,8 +17,7 @@ class StockUtilities:
     @staticmethod
     # Get original data from Yahoo Finance for use in plotting
     def get_original(ticker: str, start: str ='10y') -> pd.DataFrame:
-        original: pd.DataFrame = yf.Ticker(ticker)
-        original = original.history(period=start)
+        original: pd.DataFrame = yf.Ticker(ticker).history(period=start)
         original = original.filter(['Close'])
         original = original.reset_index(drop=False)
         # new_rows = pd.DataFrame({'Close': [201.66, 210.88, 208.97, 222.18]})
@@ -31,8 +28,7 @@ class StockUtilities:
     @staticmethod
     # Get data from Yahoo Finance and calculate daily returns
     def get_data(ticker: str, start: str ='10y') -> pd.DataFrame:
-        df: pd.DataFrame = yf.Ticker(ticker)
-        df = df.history(period=start)
+        df: pd.DataFrame = yf.Ticker(ticker).history(period=start)
         df['Return'] = df['Close'].shift(-1) - df['Close']
         df = df.filter(['Return'])
         df = df.dropna()
@@ -117,20 +113,18 @@ class StockUtilities:
     
     @staticmethod
     # Plot predictions
-    def display_predictions(original: pd.DataFrame, n_future: int, merged_df: pd.DataFrame) -> plt.figure:
+    def display_predictions(original: pd.DataFrame, n_future: int, merged_df: pd.DataFrame) -> go.Figure:
         start = math.ceil((original.index[-1] - n_future)  * 0.975)
         end = len(original)
 
         trace1 = go.Scatter(x=merged_df.index[start:end], y=merged_df['Close'][start:end], mode='lines+markers', name='Actual', line=dict(color='blue'))
         trace2 = go.Scatter(x=merged_df.index[end - 1:], y=merged_df['Predicted'][end - 1:], mode='lines+markers', name='Predicted', line=dict(color='red'))
 
-        # Create the layout
         layout = go.Layout(title='Predicted Stock Price', 
                            xaxis=dict(title='Date'), 
                            yaxis=dict(title='Close Price'),
                            )
-
-        # Create the figure
+        
         fig = go.Figure(data=[trace1, trace2], layout=layout)
 
         return fig
