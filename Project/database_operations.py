@@ -1,3 +1,7 @@
+# This file implements the logic necessary for transfer learning. It is only
+# used to create the functions in functions.py that are then used by the streamlit app.
+
+
 import os
 import tensorflow as tf
 from pymongo.mongo_client import MongoClient
@@ -8,7 +12,6 @@ def check_if_exists(name):
     cluster = MongoClient("mongodb+srv://kendrickj5:james@models.bewjwp9.mongodb.net/?retryWrites=true&w=majority")
     db = cluster['models']
     fs = GridFS(db)
-
     return fs.exists({"_id": name})
 
 

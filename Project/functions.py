@@ -1,3 +1,6 @@
+# This file is what the streamlit app is supposed to interact with. It combines the stock objects
+# with the database operations to make function calls in the streamlit app more intuitive.
+
 import model as m
 import pandas as pd
 import plotly.graph_objects as go
@@ -59,3 +62,5 @@ def get_model_picks(tickers: list[str], n_future: int, type: str | None) -> list
 
 def clear_cache() -> None:
     cached = {}
+
+# add a main method here so that I can just call this one in my file to get the data

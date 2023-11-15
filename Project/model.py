@@ -1,3 +1,10 @@
+# This file stores the objects for each stock. Each stock object is either
+# a NewStock or an OldStock. NewStocks are stocks that are not in the database
+# and OldStocks are stocks that are in the database. These are different becasue
+# NewStocks need to be created and trained differently than OldStocks. The only
+# purpose of this file is to be used in the functions.py file.
+
+
 import math
 import numpy as np
 import pandas as pd
