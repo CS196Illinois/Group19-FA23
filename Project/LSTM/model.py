@@ -150,7 +150,8 @@ class NewStock(StockUtilities):
         self.train_dataY: tf.Tensor
         self.train_dataX, self.train_dataY = self.get_training_data(self.scaled_data, self.n_future, self.n_past)
         self.test_data: tf.Tensor = self.get_testing_data(self.scaled_data, self.n_past, self.split)
-    
+
+    # Lowered neurons for faster testing, original structure: 64 and 32 neurons for first and second layers respectively 
     # Get model for predictions
     def get_model(self, type: str | None) -> Sequential:
         model: Sequential = Sequential()
@@ -171,7 +172,8 @@ class NewStock(StockUtilities):
             model.add(Dense(self.train_dataY.shape[1]))
             model.compile(optimizer='adam', loss='mse')
         return model
-    
+
+    # Lowered epochs for faster testing, original epochs: 48
     # Fit model to training data
     def fit_model(self, model: Sequential) -> Sequential:
         model.fit(self.train_dataX, self.train_dataY, epochs=4, batch_size=10, verbose=0)
