@@ -1,3 +1,7 @@
+# This file implements the logic necessary for transfer learning. It is only
+# used to create the functions in functions.py that are then used by the streamlit app.
+
+
 import os
 import tensorflow as tf
 from pymongo.mongo_client import MongoClient
@@ -5,10 +9,9 @@ from gridfs import GridFS
 
 # Returns True if the model exists in the database, False otherwise
 def check_if_exists(name):
-    cluster = MongoClient("mongodb+srv://rdlee4:istooweak@models.bewjwp9.mongodb.net/?retryWrites=true&w=majority")
+    cluster = MongoClient("mongodb+srv://kendrickj5:james@models.bewjwp9.mongodb.net/?retryWrites=true&w=majority")
     db = cluster['models']
     fs = GridFS(db)
-
     return fs.exists({"_id": name})
 
 
@@ -16,7 +19,7 @@ def check_if_exists(name):
 def save_model_to_db(model, name, file_exists, last_updated):
     model.save(name)
 
-    cluster = MongoClient("mongodb+srv://rdlee4:istooweak@models.bewjwp9.mongodb.net/?retryWrites=true&w=majority")
+    cluster = MongoClient("mongodb+srv://kendrickj5:james@models.bewjwp9.mongodb.net/?retryWrites=true&w=majority")
     db = cluster['models']
     fs = GridFS(db)
 
@@ -30,7 +33,7 @@ def save_model_to_db(model, name, file_exists, last_updated):
 
 # Returns the model from the database
 def get_model_from_db(name):
-    cluster = MongoClient("mongodb+srv://rdlee4:istooweak@models.bewjwp9.mongodb.net/?retryWrites=true&w=majority")
+    cluster = MongoClient("mongodb+srv://kendrickj5:james@models.bewjwp9.mongodb.net/?retryWrites=true&w=majority")
     db = cluster['models']
     fs = GridFS(db)
     file = fs.find_one({"_id": name}).read()
@@ -43,7 +46,7 @@ def get_model_from_db(name):
 
 # Returns the last_updated field from the database
 def get_last_updated(name):
-    cluster = MongoClient("mongodb+srv://rdlee4:istooweak@models.bewjwp9.mongodb.net/?retryWrites=true&w=majority")
+    cluster = MongoClient("mongodb+srv://kendrickj5:james@models.bewjwp9.mongodb.net/?retryWrites=true&w=majority")
     db = cluster['models']
     fs = GridFS(db)
     file = fs.find_one({"_id": name})

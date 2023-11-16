@@ -2,52 +2,36 @@ import random
 import pandas as pd
 import yfinance as yf
 import LSTM_model as LSTM
+import GRU_model as GRU
+import BidirectionalNN_model as BNN
 import database_operations as db_ops
 from keras.models import load_model
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+import functions as func
+import model as model
+import database_operations as db
 
 # Load the pretrained LSTM model
 model = load_model("stock_prediction_model.py")
 # In reality, this would depend on the model the user chooses but I just did one for test purposes
 
-# Randomly generate list of stocks
-stock_list = pd.read_csv("nasdaq_screener_1698644339918.csv")["Symbol"].tolist()
-random_stocks = random.sample(stock_list, 10)
-
-# Helper function to calculate gain
-def calculate_gain(ticker, model):
-    stock = None
-    name_in_db = f"{ticker}.h5"
-    in_db = db_ops.check_if_exists(name_in_db)
-    if in_db:
-        stock = LSTM.OldStock()
+# Random stocks is a list of tickers
+def game(random_stocks, number_of_days, model_type, player_stocks):
+    stock_gains = func.calculate_gain(random_stocks, number_of_days, model_type) # list of money earned from each stock
+    stock_dict = {random_stocks[i]: stock_gains[i] for i in range(len(random_stocks))} # dictionary of stocks and their gains
+    # This if for model
+    sorted_stocks = sorted(stock_dict.items(), key=lambda x: x[1], reverse=True)
+    top_3_stocks = sorted_stocks[:3] # list of floats
+    model_gains = sum(top_3_stocks)
+    # Player
+    player_gains = 0
+    for ticker in player_stocks:
+        if ticker in stock_dict.items():
+            player_gains += stock_dict[ticker]
+    if model_gains > player_gains:
+        return "The model won!"
+    elif model_gains < player_gains:
+        return "You win!"
     else:
-        stock = LSTM.NewStock()
-    model = stock.get_model()
-    model = stock.fit_model(model)
-    db_ops.save_model_to_db(model, name_in_db, in_db, stock.now_index)
-    raw_pred = stock.predict(model, stock.test_data)
-    merged_df = stock.reshape(raw_pred, stock.scaler, stock.scaled_data, stock.original)
-    final_price = merged_df['Predictions'].iloc[-1]
-
-    df = yf.Ticker(ticker)
-    df = df.history(period="200d")
-
-    # Calculate initial investment
-    avg_opening_price = df['Open'].mean()
-    tolerance = 0.02
-    initial_investment = avg_opening_price * (1 + tolerance)
-
-    # Calculate final gain
-    final_gain = 100 * (final_price - initial_investment) / initial_investment
-    return final_gain
-
-three_best_stocks = []
-for stock in random_stocks:
-    gain = calculate_gain(stock)
-    three_best_stocks.append((stock, gain))
-
-# Sort stocks by gain and then return predicted top 3
-three_best_stocks = sorted(three_best_stocks, key=lambda x: x[1], reverse=True)[:3]
-print(three_best_stocks)
-
-# then the model gains are compared to the player gains
+        return "Draw!"
