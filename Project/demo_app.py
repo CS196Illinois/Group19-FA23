@@ -16,7 +16,7 @@ def get_tickers() -> list[str]:
     random_ten: list[str] = random.sample(stock_list, 10)
     return random_ten
 
-random_ten: list[str] = get_tickers()
+# random_ten: list[str] = get_tickers()
 # Manually setting just for testing purposes
 random_ten = ["AAPL", "MSFT", "AMZN", "META", "TSLA"]
 tickers: list[str] = st.multiselect('Select 3 stocks', sorted(random_ten), max_selections=3)

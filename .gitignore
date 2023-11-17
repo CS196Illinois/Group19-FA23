@@ -1,3 +1,4 @@
 .mypy_cache
 my_venv
 Project/__pycache__
+.DS_Store
