@@ -1,1 +1,4 @@
-.DS_Store
+.mypy_cache
+my_venv
+Project/LSTM/__pycache__
+my_env
