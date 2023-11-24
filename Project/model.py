@@ -10,8 +10,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 import tensorflow as tf
-from datetime import timedelta
-from keras.optimizers import Adam
+from keras.optimizers.legacy import Adam
 from keras.models import Sequential
 import database_operations as db_ops
 import plotly.graph_objects as go
@@ -28,31 +27,44 @@ class StockUtilities:
         original: pd.DataFrame = yf.Ticker(ticker).history(period=start)
         original = original.filter(['Close'])
         original = original.reset_index(drop=False)
-        # new_rows = pd.DataFrame({'Close': [201.66, 210.88, 208.97, 222.18]})
-        # original = pd.concat([new_rows, original], ignore_index=True)
-        original = original.loc[:len(original) - 1]
+        # new_rows = {'Close': [201.66, 210.88, 208.97, 222.18, 217.69]}
+        # original = pd.concat([original, pd.DataFrame(new_rows)], ignore_index=True)
+        original = original.loc[:len(original)]
         return original
     
     @staticmethod
     # Get data from Yahoo Finance and calculate daily returns
-    def get_data(ticker: str, start: str ='10y') -> pd.DataFrame:
+    def get_data(ticker: str, n_future: int, start: str ='10y') -> pd.DataFrame:
         df: pd.DataFrame = yf.Ticker(ticker).history(period=start)
         df['Return'] = df['Close'].shift(-1) - df['Close']
         df = df.filter(['Return'])
         df = df.dropna()
         df = df.reset_index(drop=True)
-        # new_rows = pd.DataFrame({'Return': [6.5, -4.5, -1.1, 3.4]})
-        # df = pd.concat([new_rows, df], ignore_index=True)
-        return df
+        # new_rows = {'Return': [6.5, -4.5, -1.1, 3.4, -1.4]}
+        # df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
+        return df[:-n_future]
     
     @staticmethod
     # Scale data using StandardScaler
-    def scale_data(df : pd.DataFrame) -> tuple[StandardScaler, np.ndarray]:
+    def scale_data(df: pd.DataFrame, name: str, has_scaler: bool, has_new_data: bool) -> tuple[StandardScaler, np.ndarray]:
         cols: list = list(df)[0:1]
         data: pd.DataFrame = df[cols].astype(float)
-        scaler = StandardScaler()
-        scaled_data: np.ndarray = scaler.fit_transform(data)
-        return scaler, scaled_data
+        scaler: StandardScaler
+        scaled_data: np.ndarray
+        if has_scaler:
+            scaler = db_ops.get_scaler_from_db(name)
+
+            if has_new_data:
+                scaled_data = scaler.fit_transform(data)
+                return scaler, scaled_data
+            else:
+                scaled_data = scaler.transform(data)
+                return scaler, scaled_data
+        else:
+            scaler = StandardScaler()
+            scaled_data = scaler.fit_transform(data)
+            db_ops.save_scaler_to_db(name, scaler)
+            return scaler, scaled_data
     
     @staticmethod
     # Get training data for LSTM model
@@ -94,40 +106,29 @@ class StockUtilities:
     
     @staticmethod
     # Reshape predictions for plotting
-    def reshape(raw_pred: np.ndarray, scaler: StandardScaler, scaled_data: np.ndarray, original: pd.DataFrame, n_future: int) -> pd.DataFrame:
+    def reshape(raw_pred: np.ndarray, scaler: StandardScaler, original: pd.DataFrame, n_future: int) -> pd.DataFrame:
         original_copy: pd.DataFrame = original.copy()
-        original_copy.index = original_copy['Date']
-        original_copy = original_copy.filter(['Close'])
-        original_copy.index = original_copy.index.strftime('%Y-%m-%d')
 
-        # raw_pred = np.repeat(raw_pred, scaled_data.shape[1], axis=1)
         predictions: np.ndarray | pd.DataFrame = scaler.inverse_transform(raw_pred)[:,0]
 
-        last_price: float = original['Close'][original.index[-1]]
-        predictions[0] = last_price + predictions[0]
+        last_price: float = original['Close'][original.index[-n_future - 1]]
+        predictions = np.insert(predictions, 0, last_price)
         predictions = np.cumsum(predictions)
-        predictions = pd.DataFrame(predictions)
-        predictions.rename(columns={0:'Predicted'}, inplace=True)
-        new_row: pd.DataFrame = pd.DataFrame({'Predicted': [last_price]})
-        predictions = pd.concat([new_row, predictions], ignore_index=True)
-        predictions.index = predictions.index + original.index[-1]
+        start_date: int = original_copy.index[-n_future - 1]
+        original_copy.loc[start_date:, 'Predicted'] = predictions
+        original_copy.index = original_copy['Date']
+        original_copy.index = original_copy.index.strftime('%Y-%m-%d')
+        original_copy = original_copy.filter(['Close', 'Predicted'])
 
-        pickup: pd.Timestamp = pd.to_datetime(original_copy.index[-1])
-        date_range = [pickup + timedelta(days=i) for i in range(0, n_future + 1)]
-        predictions.index = date_range
-        predictions.index = predictions.index.strftime('%Y-%m-%d')
-
-        merged_df = pd.concat([original_copy, predictions], ignore_index=False)
-
-        return merged_df
+        return original_copy
     
     @staticmethod
     # Plot predictions
     def display_predictions(original: pd.DataFrame, n_future: int, merged_df: pd.DataFrame) -> go.Figure:
         start = math.ceil((original.index[-1] - n_future)  * 0.975)
-        end = len(original)
+        end = len(original) - n_future
 
-        trace1 = go.Scatter(x=merged_df.index[start:end], y=merged_df['Close'][start:end], mode='lines+markers', name='Actual', line=dict(color='blue'))
+        trace1 = go.Scatter(x=merged_df.index[start:], y=merged_df['Close'][start:], mode='lines+markers', name='Actual', line=dict(color='blue'))
         trace2 = go.Scatter(x=merged_df.index[end - 1:], y=merged_df['Predicted'][end - 1:], mode='lines+markers', name='Predicted', line=dict(color='red'))
 
         layout = go.Layout(title='Predicted Stock Price', 
@@ -143,13 +144,13 @@ class StockUtilities:
 # Class for new stocks that are not in the database
 class NewStock(StockUtilities):
 
-    def __init__(self, ticker: str, future: int, start: str='10y') -> None:
+    def __init__(self, ticker: str, future: int, name: str, start: str='10y') -> None:
         self.original: pd.DataFrame = self.get_original(ticker, start)
-        self.now_index: int = self.original.index[-1]
-        self.df: pd.DataFrame = self.get_data(ticker, start)
+        self.now_index: int = self.original.index[-future - 1]
+        self.df: pd.DataFrame = self.get_data(ticker, future, start)
         self.scaler: StandardScaler
         self.scaled_data: np.ndarray
-        self.scaler, self.scaled_data = self.scale_data(self.df)
+        self.scaler, self.scaled_data = self.scale_data(self.df, name, False, True)
         self.split: int = len(self.scaled_data) - future
         self.n_future: int = future
         self.n_past: int = 45
@@ -163,19 +164,19 @@ class NewStock(StockUtilities):
     def get_model(self, type: str | None) -> Sequential:
         model: Sequential = Sequential()
         if type == 'LSTM':
-            model.add(LSTM(5, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1)))
-            model.add(LSTM(2, activation='tanh', return_sequences=False))
+            model.add(LSTM(64, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1)))
+            model.add(LSTM(32, activation='tanh', return_sequences=False))
             model.add(Dense(self.train_dataY.shape[1]))
             model.compile(optimizer='adam', loss='mse')
         elif type == 'GRU':
-            model.add(GRU(5, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1)))
-            model.add(GRU(2, activation='tanh', return_sequences=False))
+            model.add(GRU(64, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1)))
+            model.add(GRU(32, activation='tanh', return_sequences=False))
             model.add(Dense(self.train_dataY.shape[1]))
             model.compile(optimizer='adam', loss='mse')
         else:
             self.train_dataX = np.expand_dims(self.train_dataX, axis=-1)
-            model.add(Bidirectional(LSTM(5, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1))))
-            model.add(Bidirectional(LSTM(2, activation='tanh', return_sequences=False)))
+            model.add(Bidirectional(LSTM(64, activation='tanh', return_sequences=True, input_shape=(self.train_dataX.shape[1], 1))))
+            model.add(Bidirectional(LSTM(32, activation='tanh', return_sequences=False)))
             model.add(Dense(self.train_dataY.shape[1]))
             model.compile(optimizer='adam', loss='mse')
         return model
@@ -183,7 +184,7 @@ class NewStock(StockUtilities):
     # Lowered epochs for faster testing, original epochs: 48
     # Fit model to training data
     def fit_model(self, model: Sequential) -> Sequential:
-        model.fit(self.train_dataX, self.train_dataY, epochs=4, batch_size=10, verbose=0)
+        model.fit(self.train_dataX, self.train_dataY, epochs=48, batch_size=10, verbose=0)
         return model
     
 
@@ -194,13 +195,16 @@ class OldStock(StockUtilities):
         self.n_past: int = 45
         self.ticker: str = ticker
         self.original: pd.DataFrame = self.get_original(ticker, start)
-        self.now_index: int = self.original.index[-1]
+        self.now_index: int = self.original.index[-n_future - 1]
         self.last_updated: int = db_ops.get_last_updated(name)
-        self.df: pd.DataFrame = self.get_data(ticker, start)[(self.last_updated - n_future - self.n_past):]
+        self.df: pd.DataFrame = self.get_data(ticker, n_future, start)[(self.last_updated - n_future - self.n_past):]
         self.df = self.df.reset_index(drop=True)
         self.scaler: StandardScaler
         self.scaled_data: np.ndarray
-        self.scaler, self.scaled_data = self.scale_data(self.df)
+        if self.now_index - self.last_updated > 0:
+            self.scaler, self.scaled_data = self.scale_data(self.df, name, True, True)
+        else:
+            self.scaler, self.scaled_data = self.scale_data(self.df, name, True, False)
         self.split: int = len(self.scaled_data) - n_future
         self.train_dataX: tf.Tensor
         self.train_dataY: tf.Tensor

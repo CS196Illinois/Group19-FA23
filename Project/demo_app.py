@@ -18,17 +18,19 @@ def get_tickers() -> list[str]:
 
 # random_ten: list[str] = get_tickers()
 # Manually setting just for testing purposes
-random_ten = ["AAPL", "MSFT", "AMZN", "META", "TSLA"]
+random_ten = ["AAPL"]
 tickers: list[str] = st.multiselect('Select 3 stocks', sorted(random_ten), max_selections=3)
 
 n_future: int | None = st.selectbox('Enter Number of Days to Predict', [5 ,10, 30])
 model_type: str | None = st.selectbox("Choose Model To Compete Against", ["GRU", "LSTM", "Bidirectional LSTM"], placeholder="LSTM")
 if model_type == "Bidirectional LSTM":
     model_type = "BiLSTM"
-
 if st.button("Submit"):
     for ticker in random_ten:
-        st.plotly_chart(f.get_chart(ticker, int(n_future), model_type))
+        chart, merged_df = f.get_chart(ticker, int(n_future), model_type)
+        st.plotly_chart(chart)
+        st.write(merged_df)
     st.write(f.get_model_picks(tickers, int(n_future), model_type))
+
     f.clear_cache()
     st.cache_resource.clear()
