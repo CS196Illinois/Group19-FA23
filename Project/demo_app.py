@@ -26,8 +26,15 @@ model_type: str | None = st.selectbox("Choose Model To Compete Against", ["GRU",
 if model_type == "Bidirectional LSTM":
     model_type = "BiLSTM"
 if st.button("Submit"):
+    (f.get_user_chart(tickers[0], int(n_future), model_type)).show(config = {'modeBarButtonsToAdd':['drawline',
+                                        'drawopenpath',
+                                        'drawclosedpath',
+                                        'drawcircle',
+                                        'drawrect',
+                                        'eraseshape'
+                                       ]})
     for ticker in random_ten:
-        chart, merged_df = f.get_chart(ticker, int(n_future), model_type)
+        chart, merged_df = f.get_final_chart(ticker, int(n_future), model_type)
         st.plotly_chart(chart)
         st.write(merged_df)
     st.write(f.get_model_picks(tickers, int(n_future), model_type))

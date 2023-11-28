@@ -33,21 +33,30 @@ def _load_data(ticker: str, n_future: int, type: str | None, merged: bool=True, 
     return merged_df, stock.original if merged and orig else merged_df if merged else stock.original
     
 # Returns the chart for the predictions
-def get_chart(ticker: str, n_future: int, type: str | None) -> go.Figure:
+def get_final_chart(ticker: str, n_future: int, type: str | None) -> go.Figure:
     merged_df: pd.DataFrame
     original: pd.DataFrame
     merged_df, original = _load_data(ticker, n_future, type)
-    return m.StockUtilities.display_predictions(original, n_future, merged_df), merged_df[len(merged_df)-20:]
+    return m.StockUtilities.display_predictions(original, n_future, merged_df, ticker), merged_df[len(merged_df)-20:]
+
+# Returns the chart for the user to chart their own predictions
+def get_user_chart(ticker: str, n_future: int, type: str | None) -> go.Figure:
+    merged_df: pd.DataFrame
+    original: pd.DataFrame
+    merged_df, original = _load_data(ticker, n_future, type, False, True)
+    return m.StockUtilities.get_plot(original, n_future, ticker)
 
 # Returns the top 3 picks from the model
 def get_model_picks(tickers: list[str], n_future: int, type: str | None) -> list[tuple[str, float]]:
     close_prices: dict[str, float] = {}
     args: list[tuple[str, int, str | None]] = [(ticker, n_future, type) for ticker in tickers]
     for arg in args:
-            merged_df = _load_data(arg[0], arg[1], arg[2])[0]
-            close_prices[arg[0]] = merged_df['Predicted'].iloc[-1]
+        merged_df = _load_data(arg[0], arg[1], arg[2])[0]
+        close_prices[arg[0]] = merged_df['Predicted'].iloc[-1]
     sorted_close_prices = [k for k in sorted(close_prices.items(), key=lambda item: item[1], reverse=True)]
     return sorted_close_prices[:3]
+
+
 
 # Clears the cache
 def clear_cache() -> None:

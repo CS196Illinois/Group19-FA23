@@ -124,19 +124,45 @@ class StockUtilities:
     
     @staticmethod
     # Plot predictions
-    def display_predictions(original: pd.DataFrame, n_future: int, merged_df: pd.DataFrame) -> go.Figure:
+    def display_predictions(original: pd.DataFrame, n_future: int, merged_df: pd.DataFrame, ticker: str) -> go.Figure:
         start = math.ceil((original.index[-1] - n_future)  * 0.975)
         end = len(original) - n_future
 
         trace1 = go.Scatter(x=merged_df.index[start:], y=merged_df['Close'][start:], mode='lines+markers', name='Actual', line=dict(color='blue'))
         trace2 = go.Scatter(x=merged_df.index[end - 1:], y=merged_df['Predicted'][end - 1:], mode='lines+markers', name='Predicted', line=dict(color='red'))
 
-        layout = go.Layout(title='Predicted Stock Price', 
+        layout = go.Layout(title=f'Predicted {ticker} Stock Price', 
                            xaxis=dict(title='Date'), 
                            yaxis=dict(title='Close Price'),
                            )
         
         fig = go.Figure(data=[trace1, trace2], layout=layout)
+
+        return fig
+    
+    @staticmethod
+    # Get plot for charting
+    def get_plot(original: pd.DataFrame, n_future: int, ticker: str) -> go.Figure:
+        original_copy: pd.DataFrame = original.copy()
+        original_copy.index = original_copy['Date']
+        original_copy.index = original_copy.index.strftime('%Y-%m-%d')
+        original_copy = original_copy.filter(['Close'])
+        trace = go.Scatter(x=original_copy.index[:-n_future], y=original_copy['Close'].iloc[:-n_future], mode='lines+markers', name='Actual', line=dict(color='blue'))
+
+        layout = go.Layout(title=f'{ticker} Stock Price', 
+                           xaxis=dict(title='Date'), 
+                           yaxis=dict(title='Close Price'),
+                           )
+        
+        fig = go.Figure(data=[trace], layout=layout)
+
+        fig.update_layout(
+            dragmode='drawline',
+            newshape=dict(
+                line_color='red',
+                line_width=1
+            )
+        )
 
         return fig
 
