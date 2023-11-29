@@ -31,3 +31,5 @@ def game(random_stocks, number_of_days, model_type, player_stocks):
         return "You win!"
     else:
         return "Draw!"
+
+# Graph (take function from James db)
