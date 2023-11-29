@@ -1,4 +1,4 @@
-import tkinter as tk
+import streamlit as st
 import yfinance as yf
 
 def fetch_stock_data(stock_ticker):
@@ -10,33 +10,26 @@ def fetch_stock_data(stock_ticker):
     profit_margin = fundamentals.get('profitMargins', 'N/A')
 
     # Fetching historical stock performance
-    historical_data = stock.history(period="1y")  # You can adjust the period
+    historical_data = stock.history(period="1y")  # Adjust the period as needed
 
-    # Fetching earnings reports
-    earnings = stock.earnings
+    # Formatting the display information
+    display_info = f"""
+    **Stock**: {stock_ticker}
+    **Revenue**: {revenue}
+    **Profit Margin**: {profit_margin}
+    \n**Historical Data (Last 5)**:\n{historical_data.tail()}
+    """
+    return display_info
 
-    # Displaying the information
-    display_info = f"Stock: {stock_ticker}\nRevenue: {revenue}\nProfit Margin: {profit_margin}\n\nHistorical Data (Last 5):\n{historical_data.tail()}\n\nEarnings:\n{earnings}"
-    text_output.delete(1.0, tk.END)
-    text_output.insert(tk.END, display_info)
-
-
-# Set up the main window
-root = tk.Tk()
-root.title("Stock Information")
-
-# Text box for displaying stock info
-text_output = tk.Text(root, height=20, width=80)
-text_output.pack()
+# Streamlit UI layout
+st.title('Stock Information')
 
 # Buttons for each stock
-apple_button = tk.Button(root, text="Apple", command=lambda: fetch_stock_data("AAPL"))
-apple_button.pack()
+if st.button('Apple'):
+    st.text(fetch_stock_data("AAPL"))
 
-tesla_button = tk.Button(root, text="Tesla", command=lambda: fetch_stock_data("TSLA"))
-tesla_button.pack()
+if st.button('Tesla'):
+    st.text(fetch_stock_data("TSLA"))
 
-nike_button = tk.Button(root, text="Nike", command=lambda: fetch_stock_data("NKE"))
-nike_button.pack()
-
-root.mainloop()
+if st.button('Nike'):
+    st.text(fetch_stock_data("NKE"))
