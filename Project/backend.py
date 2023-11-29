@@ -65,7 +65,3 @@ def game(random_stocks, number_of_days, model_type, player_stocks):
         return "You win!"
     else:
         return "Draw!"
-
-# Run the game with the randomly chosen stocks
-game_result = game(selected_stocks, 10, 'LSTM', selected_stocks)
-print(game_result)
