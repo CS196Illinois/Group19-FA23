@@ -12,10 +12,6 @@ import functions as func
 import model as model
 import database_operations as db
 
-# Load the pretrained LSTM model
-model = load_model("stock_prediction_model.py")
-# In reality, this would depend on the model the user chooses but I just did one for test purposes
-
 # Random stocks is a list of tickers
 def game(random_stocks, number_of_days, model_type, player_stocks):
     stock_gains = func.calculate_gain(random_stocks, number_of_days, model_type) # list of money earned from each stock
