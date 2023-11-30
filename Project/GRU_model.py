@@ -30,12 +30,12 @@ train_data, test_data = data[:train_size], data[train_size:]
 
 # Create sequences of historical data for training
 def create_sequences(data, seq_length, horizon):
-    sequences = []
+    X, y = [], []
     for i in range(len(data) - seq_length - horizon):
-        X = data[i:i + seq_length]
-        y = data[i + seq_length + horizon]  # Adjust the horizon here
-        sequences.append((X, y))
-    return np.array(sequences)
+        X.append(data[i:i + seq_length])
+        y.append(data[i + seq_length + horizon])  # Adjust the horizon here
+    return np.array(X), np.array(y)
+
 
 seq_length = 10  # Length of historical sequences
 prediction_horizon = 1 # 30 trading days = 1 month (assuming daily data)
@@ -44,10 +44,8 @@ train_sequences = create_sequences(train_data, seq_length, prediction_horizon)
 test_sequences = create_sequences(test_data, seq_length, prediction_horizon)
 
 # Prepare data for training
-X_train = np.array([seq[0] for seq in train_sequences])
-y_train = np.array([seq[1] for seq in train_sequences])
-X_test = np.array([seq[0] for seq in test_sequences])
-y_test = np.array([seq[1] for seq in test_sequences])
+X_train, y_train = train_sequences
+X_test, y_test = test_sequences
 
 # Convert NumPy arrays to TensorFlow tensors
 X_train = tf.convert_to_tensor(X_train, dtype=tf.float32)

@@ -2,20 +2,23 @@ import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 import pandas as pd
+import yfinance as yf
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_squared_error
 from keras.models import Sequential
-from keras.layers import SimpleRNN, Dense, Bidirectional, LSTM
+from keras.layers import Bidirectional, LSTM, Dense
 import matplotlib.pyplot as plt
-from keras.models import load_model, save_model
 from keras.regularizers import l2
 
-# Load stock data
-file_path = "/content/drive/My Drive/AAPL.csv"
-data = pd.read_csv(file_path)
+# Fetch AAPL historical stock price data from Yahoo Finance
+ticker_symbol = "AAPL"
+start_date = "2020-01-01"
+end_date = "2021-12-31"
+
+# Download historical data
+data = yf.download(ticker_symbol, start=start_date, end=end_date)
+
 # Preprocess the data
-data['Date'] = pd.to_datetime(data['Date'])
-data.set_index('Date', inplace=True)
+data['Date'] = pd.to_datetime(data.index)  # Set the index as 'Date'
 data = data['Close'].values.reshape(-1, 1)
 
 # Normalize the data
@@ -72,20 +75,15 @@ plt.ylabel('Stock Price')
 plt.title('Stock Price Prediction with Bi-RNN')
 plt.show()
 
-# Load historical data
-historical_data = pd.read_csv('/content/drive/My Drive/AAPL.csv')
-next_30_days_data = historical_data.tail(30)
-# Preprocess
-scaler = MinMaxScaler()
-scaled_data = scaler.fit_transform(next_30_days_data['Close'].values.reshape(-1, 1))
-
-# array to store predictions
+# Predict the next 30 days
+next_30_days_data = data[-seq_length:]
+scaled_data = scaler.transform(next_30_days_data.reshape(-1, 1))
 predictions = []
 
 # Iterate through each day
-for day in range(1, 31):
+for day in range(30):
     # Make a prediction for the next day
-    prediction = model.predict(scaled_data.reshape(1, 30, 1))
+    prediction = model.predict(scaled_data.reshape(1, seq_length, 1))
 
     # Append the prediction to the list
     predictions.append(prediction[0][0])
@@ -97,16 +95,16 @@ for day in range(1, 31):
 # Inverse transform the predictions to get actual stock prices
 predicted_prices = scaler.inverse_transform(np.array(predictions).reshape(-1, 1))
 
-#Optimize
-model = Sequential()
-model.add(Bidirectional(LSTM(50, input_shape=(seq_length, 1), kernel_regularizer=l2(0.01), recurrent_regularizer=l2(0.01))))
-model.add(Dense(1))
+# Optimize (if needed)
+model_optimized = Sequential()
+model_optimized.add(Bidirectional(LSTM(50, input_shape=(seq_length, 1), kernel_regularizer=tf.keras.regularizers.l2(0.01), recurrent_regularizer=tf.keras.regularizers.l2(0.01))))
+model_optimized.add(Dense(1))
 
 # Plot the results
 plt.figure(figsize=(12, 6))
-plt.plot(predictions, label='Predicted')
+plt.plot(predicted_prices, label='Predicted')
 plt.legend()
 plt.xlabel('Time (Days)')
 plt.ylabel('Stock Price (Dollars)')
-plt.title('Stock Price Prediction with Bi-RNN')
+plt.title('Stock Price Prediction with Bi-RNN for Next 30 Days')
 plt.show()

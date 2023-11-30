@@ -191,22 +191,3 @@ class OldStock(StockUtilities):
             model.fit(self.train_dataX, self.train_dataY, epochs=5, batch_size=12, verbose=0)
 
         return model
-    
-# Example of how to implement using Streamlit
-st.title('Stock Price Prediction')
-ticker = st.text_input('Enter Stock Ticker Symbol', 'AAPL')
-n_future = st.number_input('Enter Number of Days to Predict', 10)
-
-if st.button("Submit"):
-    stock = None
-    in_db = db_ops.check_if_exists(f'{ticker}.h5')
-    if in_db:
-        stock = OldStock(ticker, n_future)
-    else:
-        stock = NewStock(ticker, n_future)
-    model = stock.get_model()
-    model = stock.fit_model(model)
-    db_ops.save_model_to_db(model, f'{ticker}.h5', in_db, stock.now_index)
-    raw_pred = stock.predict(model, stock.test_data)
-    merged_df = stock.reshape(raw_pred, stock.scaler, stock.scaled_data, stock.original)
-    stock.display_predictions(stock.original, stock.n_future, merged_df)

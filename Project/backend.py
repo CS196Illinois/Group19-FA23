@@ -1,6 +1,5 @@
 import random
 import pandas as pd
-import yfinance as yf
 import LSTM_model as LSTM
 import GRU_model as GRU
 import BidirectionalNN_model as BNN
@@ -11,10 +10,6 @@ from pymongo.server_api import ServerApi
 import functions as func
 import model as model
 import database_operations as db
-
-# Load the pretrained LSTM model
-model = load_model("stock_prediction_model.py")
-# In reality, this would depend on the model the user chooses but I just did one for test purposes
 
 # Random stocks is a list of tickers
 def game(random_stocks, number_of_days, model_type, player_stocks):
