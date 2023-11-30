@@ -18,13 +18,17 @@ def get_tickers() -> list[str]:
 
 # random_ten: list[str] = get_tickers()
 # Manually setting just for testing purposes
-random_ten = ["AAPL"]
+random_ten = ["AAPL", "MSFT", "AMZN"]
 tickers: list[str] = st.multiselect('Select 3 stocks', sorted(random_ten), max_selections=3)
 
 n_future: int | None = st.selectbox('Enter Number of Days to Predict', [5 ,10, 30])
 model_type: str | None = st.selectbox("Choose Model To Compete Against", ["GRU", "LSTM", "Bidirectional LSTM"], placeholder="LSTM")
 if model_type == "Bidirectional LSTM":
     model_type = "BiLSTM"
+
+user_prediction: float
+model_prediction: float
+actual_price: float
 if st.button("Submit"):
     (f.get_user_chart(tickers[0], int(n_future), model_type)).show(config = {'modeBarButtonsToAdd':['drawline',
                                         'drawopenpath',
@@ -41,3 +45,13 @@ if st.button("Submit"):
 
     f.clear_cache()
     st.cache_resource.clear()
+
+user_prediction = st.number_input('Enter Your Prediction', min_value=0.0, max_value=None, value=0.0, step=0.01)
+if st.button("Submit Prediction"):
+    model_prediction, actual_price = f.get_prices(tickers[0], int(n_future), model_type)
+    if (abs(user_prediction - actual_price) > abs(model_prediction - actual_price)):
+        st.write("You lost to the model :(")
+    elif (abs(user_prediction - actual_price) < abs(model_prediction - actual_price)):
+        st.write("You beat the model :)")
+    else:
+        st.write("You tied the model :|")

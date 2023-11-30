@@ -56,7 +56,12 @@ def get_model_picks(tickers: list[str], n_future: int, type: str | None) -> list
     sorted_close_prices = [k for k in sorted(close_prices.items(), key=lambda item: item[1], reverse=True)]
     return sorted_close_prices[:3]
 
-
+# Get the model's prediction
+def get_prices(ticker: str, n_future: int, type: str | None) -> tuple[float, float]:
+    merged_df: pd.DataFrame
+    original: pd.DataFrame
+    merged_df, original = _load_data(ticker, n_future, type)
+    return merged_df['Predicted'].iloc[-1], original['Close'].iloc[-1]
 
 # Clears the cache
 def clear_cache() -> None:
