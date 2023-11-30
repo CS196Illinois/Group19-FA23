@@ -22,11 +22,10 @@ modelSelection = st.selectbox("Choose Model To Compete Against", ["GRU", "LSTM",
 # submit button
 if st.button("Submit"):
     result = model.game(["AAPL", "TSLA", "NKE"], timeFrame, modelSelection, [stock1, stock2, stock3])
+    st.markdown("<h2 style='text-align: center;'>Results:</h2>", unsafe_allow_html=True)  # Display "You Win" message
     if result == 1:
         st.markdown("<h2 style='text-align: center;'>You Win!</h2>", unsafe_allow_html=True)  # Display "You Win" message
     elif result == -1:
         st.markdown("<h2 style='text-align: center;'>You Lose!</h2>", unsafe_allow_html=True)  # Display "You Lose" message
     elif result == 0:
         st.markdown("<h2 style='text-align: center;'>Draw!</h2>", unsafe_allow_html=True)  # Display "You Lose" message
-
-    st.markdown("<h2 style='text-align: center;'>Results:</h2>", unsafe_allow_html=True)  # Display "You Win" message

@@ -18,15 +18,16 @@ def game(random_stocks, number_of_days, model_type, player_stocks):
     # This if for model
     sorted_stocks = sorted(stock_dict.items(), key=lambda x: x[1], reverse=True)
     top_3_stocks = sorted_stocks[:3] # list of floats
-    model_gains = sum(top_3_stocks)
+    print(top_3_stocks) # [('TSLA', 58.125900878906265), ('AAPL', 4.117539062500015), ('NKE', -74.77436767578124)]
+    model_gains = sum([x[1] for x in top_3_stocks])
     # Player
     player_gains = 0
     for ticker in player_stocks:
         if ticker in stock_dict.items():
             player_gains += stock_dict[ticker]
     if model_gains > player_gains:
-        return "The model won!"
+        return -1
     elif model_gains < player_gains:
-        return "You win!"
+        return 1
     else:
-        return "Draw!"
+        return 0

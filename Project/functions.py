@@ -69,11 +69,11 @@ def calculate_gain(tickers: list[str], n_future: int, type: str | None):
     for arg in args:
         if arg in cached:
             final_prices.append(cached[arg][0]['Predicted'].iloc[-1])
-            current_prices.append(cached[arg][1]['Open'].iloc[-1])
+            current_prices.append(cached[arg][1]['Close'].iloc[-1])
         else:
             merged_df, original = _load_data(arg[0], arg[1], arg[2])
             final_prices.append(merged_df['Predicted'].iloc[-1])
-            current_prices.append(original['Open'].iloc[-1])
+            current_prices.append(original['Close'].iloc[-1])
 
     # Second for loop to calculate gain for each stock
 
