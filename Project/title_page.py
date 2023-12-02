@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from keras.models import load_model, save_model
 from tensorflow.keras.regularizers import l2
 import numpy as np
-import main as main
+import main 
 
 def home():
     # website style 
