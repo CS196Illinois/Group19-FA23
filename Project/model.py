@@ -125,7 +125,7 @@ class StockUtilities:
     @staticmethod
     # Plot predictions
     def display_predictions(original: pd.DataFrame, n_future: int, merged_df: pd.DataFrame, ticker: str) -> go.Figure:
-        start = math.ceil((original.index[-1] - n_future)  * 0.975)
+        start = math.ceil((len(original) - n_future)  * 0.975)
         end = len(original) - n_future
 
         trace1 = go.Scatter(x=merged_df.index[start:], y=merged_df['Close'][start:], mode='lines+markers', name='Actual', line=dict(color='blue'))
@@ -210,7 +210,7 @@ class NewStock(StockUtilities):
     # Lowered epochs for faster testing, original epochs: 48
     # Fit model to training data
     def fit_model(self, model: Sequential) -> Sequential:
-        model.fit(self.train_dataX, self.train_dataY, epochs=48, batch_size=10, verbose=0)
+        model.fit(self.train_dataX, self.train_dataY, epochs=52, batch_size=10, verbose=0)
         return model
     
 
