@@ -10,6 +10,8 @@ from keras.models import load_model, save_model
 from tensorflow.keras.regularizers import l2
 import numpy as np
 import main 
+import stockInfo
+
 
 def home():
     # website style 
@@ -194,9 +196,11 @@ def home():
 
 selected_page = st.sidebar.selectbox(
     'Select a page',
-    ['Home', 'Game'])
+    ['Home', 'Game', 'Stock Info'])
 
 if selected_page == 'Home':
     home()
 elif selected_page == 'Game':
     main.game()
+elif selected_page == 'Stock Info':
+    stockInfo.show_stock_info()
