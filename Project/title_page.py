@@ -198,5 +198,5 @@ selected_page = st.sidebar.selectbox(
 
 if selected_page == 'Home':
     home()
-elif selected_page == 'Stock Prediction':
+elif selected_page == 'Game':
     main.game()
