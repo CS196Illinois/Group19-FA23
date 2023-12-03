@@ -4,6 +4,8 @@
 import math
 import model as m
 import pandas as pd
+import yfinance as yf
+import datetime as dt
 import plotly.graph_objects as go
 import database_operations as db_ops
 
@@ -14,9 +16,29 @@ cached: dict[tuple[str, int, str | None], tuple[pd.DataFrame, pd.DataFrame]] = {
 def _load_data(ticker: str, n_future: int, type: str | None, merged: bool=True, orig: bool=True) -> tuple[pd.DataFrame, pd.DataFrame] | pd.DataFrame:
     if (ticker, n_future, type) in cached:
         return cached[(ticker, n_future, type)]
-    stock: m.NewStock | m.OldStock | None = None
+    stock: m.SetbackNewStock | m.SetbackOldStock | None = None
     model: m.Sequential | None = None
     name: str = f'{ticker}_{type}_{n_future}.h5'
+
+    in_db = db_ops.check_if_exists(name)
+    if in_db:
+        stock = m.SetbackOldStock(ticker, n_future, name)
+        model = stock.get_model(name)
+    else:
+        stock = m.SetbackNewStock(ticker, n_future, name)
+        model = stock.get_model(type)
+    model = stock.fit_model(model)
+    db_ops.save_model_to_db(model, name, in_db, stock.now_index)
+    raw_pred = stock.predict(model, stock.test_data).numpy()
+    merged_df = stock.reshape(raw_pred, stock.scaler, stock.original, n_future)
+    cached[(ticker, n_future, type)] = merged_df, stock.original
+
+    return merged_df, stock.original if merged and orig else merged_df if merged else stock.original
+
+def _load_data_normal(ticker: str, n_future: int, type: str | None, merged: bool=True, orig: bool=True) -> tuple[pd.DataFrame, pd.DataFrame] | pd.DataFrame:
+    stock: m.NewStock | m.OldStock | None = None
+    model: m.Sequential | None = None
+    name: str = f'{ticker}_{type}_{n_future}_original.h5'
 
     in_db = db_ops.check_if_exists(name)
     if in_db:
@@ -29,23 +51,22 @@ def _load_data(ticker: str, n_future: int, type: str | None, merged: bool=True, 
     db_ops.save_model_to_db(model, name, in_db, stock.now_index)
     raw_pred = stock.predict(model, stock.test_data).numpy()
     merged_df = stock.reshape(raw_pred, stock.scaler, stock.original, n_future)
-    cached[(ticker, n_future, type)] = merged_df, stock.original
 
     return merged_df, stock.original if merged and orig else merged_df if merged else stock.original
     
 # Returns the chart for the predictions
-def get_final_chart(ticker: str, n_future: int, type: str | None) -> tuple[go.Figure, pd.DataFrame]:
+def get_setback_final_chart(ticker: str, n_future: int, type: str | None) -> tuple[go.Figure, pd.DataFrame]:
     merged_df: pd.DataFrame
     original: pd.DataFrame
     merged_df, original = _load_data(ticker, n_future, type)
-    return m.StockUtilities.display_predictions(original, n_future, merged_df, ticker), merged_df[len(merged_df)-20:]
+    return m.SetbackStockUtilities.display_predictions(original, n_future, merged_df, ticker), merged_df[len(merged_df)-20:]
 
 # Returns the chart for the user to chart their own predictions
-def get_user_chart(ticker: str, n_future: int, type: str | None) -> go.Figure:
+def get_setback_user_chart(ticker: str, n_future: int, type: str | None) -> go.Figure:
     merged_df: pd.DataFrame
     original: pd.DataFrame
     merged_df, original = _load_data(ticker, n_future, type, False, True)
-    return m.StockUtilities.get_plot(original, n_future, ticker)
+    return m.SetbackStockUtilities.get_plot(original, n_future, ticker)
 
 # Returns the top 3 picks from the model
 def get_model_picks(tickers: list[str], n_future: int, type: str | None) -> list[str]:
@@ -67,21 +88,29 @@ def get_prices(ticker: str, n_future: int, type: str | None) -> tuple[float, flo
 
 # Get the combined graph of the model's top 3 picks and the winner
 def get_gain_result_chart(model_tickers: list[str], user_tickers: list[str], n_future: int, type: str | None) -> tuple[go.Figure, str]:
-    model_original: pd.DataFrame | pd.Series[any] = _load_data(model_tickers[0], n_future, type)[1]
-    user_original: pd.DataFrame | pd.Series[any] = _load_data(user_tickers[0], n_future, type)[1]
+    model_original: pd.DataFrame | pd.Series[any] = cached[(model_tickers[0], n_future, type)][1]
+    user_original: pd.DataFrame | pd.Series[any] = cached[(user_tickers[0], n_future, type)][1]
     model_original['Return'] = model_original['Close'].shift(-1) - model_original['Close']
     user_original['Return'] = user_original['Close'].shift(-1) - user_original['Close']
+    model_original.dropna()
+    user_original.dropna()
+    model_tickers.sort()
+    user_tickers.sort()
 
-    for i in range(1, 3):
-        cur_user_original = _load_data(user_tickers[i], n_future, type)[1]
-        cur_user_original['Return'] = cur_user_original['Close'].shift(-1) - cur_user_original['Close']
-        user_original['Return'] += cur_user_original['Return']
-        cur_model_original = _load_data(model_tickers[i], n_future, type)[1]
+    print(model_tickers)
+    print(model_tickers[0])
+    for ticker in model_tickers[1:]:
+        print(ticker)
+        cur_model_original = cached[(ticker, n_future, type)][1]
         cur_model_original['Return'] = cur_model_original['Close'].shift(-1) - cur_model_original['Close']
+        cur_model_original.dropna()
         model_original['Return'] += cur_model_original['Return']
-
-    model_original['Return'] /= 3
-    user_original['Return'] /= 3
+    
+    for ticker in user_tickers[1:]:
+        cur_user_original = cached[(ticker, n_future, type)][1]
+        cur_user_original['Return'] = cur_user_original['Close'].shift(-1) - cur_user_original['Close']
+        cur_user_original.dropna()
+        user_original['Return'] += cur_user_original['Return']
 
     start = math.ceil((len(model_original) - n_future))
 
@@ -93,10 +122,6 @@ def get_gain_result_chart(model_tickers: list[str], user_tickers: list[str], n_f
     user_original.dropna(inplace=True)
     model_original["Date"] = pd.to_datetime(model_original["Date"]).dt.strftime('%Y-%m-%d')
     user_original["Date"] = pd.to_datetime(user_original["Date"]).dt.strftime('%Y-%m-%d')
-    model_original.index = pd.Index(model_original['Date'])
-    user_original.index = pd.Index(user_original['Date'])
-    print(model_original["Date"])
-    print(model_original['Net Gain'])
 
     trace1 = go.Scatter(x=model_original["Date"], y=model_original['Net Gain'], mode='lines+markers', name='Model Picks', line=dict(color='blue'))
     trace2 = go.Scatter(x=user_original["Date"], y=user_original['Net Gain'], mode='lines+markers', name='Your Picks', line=dict(color='red'))
@@ -109,7 +134,7 @@ def get_gain_result_chart(model_tickers: list[str], user_tickers: list[str], n_f
     fig = go.Figure(data=[trace1, trace2], layout=layout)
 
     winner: str
-    model_gain: float = model_original['Net Gain'].iloc[-1]
+    model_gain: float = model_original['Net Gain'].iloc[len(model_original)-1]
     user_gain: float = user_original['Net Gain'].iloc[-1]
     if model_gain > user_gain:
         winner = "Model"
@@ -119,6 +144,24 @@ def get_gain_result_chart(model_tickers: list[str], user_tickers: list[str], n_f
         winner = "Tie"
 
     return fig, winner
+
+# Reutrns the normal standard prediction chart
+def get_standard_chart(ticker: str, n_future: int, type: str | None) -> go.Figure:
+    merged_df: pd.DataFrame
+    original: pd.DataFrame
+    merged_df, original = _load_data_normal(ticker, n_future, type)
+    return m.StockUtilities.display_predictions(original, n_future, merged_df)
+
+def get_normal_chart(ticker: str, time_frame: str) -> go.Figure:
+    original = yf.Ticker(ticker).history(period=time_frame)
+    original["Date"] = pd.to_datetime(original.index).strftime('%Y-%m-%d')
+    trace = go.Scatter(x=original["Date"], y=original['Close'], mode='lines+markers', name='Close Price', line=dict(color='blue'))
+    layout = go.Layout(title=f'Close Price of {ticker} Over the Past {time_frame}', 
+                        xaxis=dict(title='Date'), 
+                        yaxis=dict(title='Close Price'),
+                        )
+    fig = go.Figure(data=[trace], layout=layout)
+    return fig
 
 # Clears the cache
 def clear_cache() -> None:
