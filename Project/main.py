@@ -1,3 +1,5 @@
+# This is the main file for the project. It is the file that is run to start the streamlit app.
+
 import streamlit as st
 import functions as f
 import game as game

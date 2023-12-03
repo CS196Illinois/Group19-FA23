@@ -1,10 +1,8 @@
 # This file implements the logic necessary for transfer learning. It is only
 # used to create the functions in functions.py that are then used by the streamlit app.
 
-
 import os
 import pickle
-import joblib
 import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from pymongo.database import Database

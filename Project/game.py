@@ -1,5 +1,4 @@
-# This file is an example of how you could use the functions in functions.py to create a streamlit app.
-
+# This file holds the logic for the game page of the website.
 
 import functions as f
 import pandas as pd
@@ -62,23 +61,3 @@ def game() -> None:
             st.plotly_chart(chart)
 
         st.cache_resource.clear()
-
-
-# user_prediction = st.number_input('Enter Your Prediction', min_value=0.0, max_value=None, value=0.0, step=0.01)
-# if st.button("Submit Prediction"):
-#     model_prediction, actual_price = f.get_prices(tickers[0], int(n_future), model_type)
-#     if (abs(user_prediction - actual_price) > abs(model_prediction - actual_price)):
-#         st.write("You lost to the model :(")
-#     elif (abs(user_prediction - actual_price) < abs(model_prediction - actual_price)):
-#         st.write("You beat the model :)")
-#     else:
-#         st.write("You tied the model :|")
-
-
-    # (f.get_user_chart(tickers[0], int(n_future), model_type)).show(config = {'modeBarButtonsToAdd':['drawline',
-    #                                     'drawopenpath',
-    #                                     'drawclosedpath',
-    #                                     'drawcircle',
-    #                                     'drawrect',
-    #                                     'eraseshape'
-    #                                    ]})

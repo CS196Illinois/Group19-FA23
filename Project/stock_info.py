@@ -1,3 +1,5 @@
+# This file contains the code for the stock information page of the web app
+
 import streamlit as st
 import yfinance as yf
 import functions as f

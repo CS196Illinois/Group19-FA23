@@ -1,8 +1,8 @@
 # This file stores the objects for each stock. Each stock object is either
-# a NewStock or an OldStock. NewStocks are stocks that are not in the database
-# and OldStocks are stocks that are in the database. These are different becasue
-# NewStocks need to be created and trained differently than OldStocks. The only
-# purpose of this file is to be used in the functions.py file.
+# a NewStock or an OldStock that is Setback (used for the game) or not (used for home page). 
+# NewStocks are stocks that are not in the database and OldStocks are stocks that are in the database. 
+# These are different becasue NewStocks need to be created and trained differently than OldStocks. 
+# The only purpose of this file is to be used in the functions.py file.
 
 
 import math
@@ -28,8 +28,6 @@ class SetbackStockUtilities:
         original: pd.DataFrame = yf.Ticker(ticker).history(period=start)
         original = original.filter(['Close'])
         original = original.reset_index(drop=False)
-        # new_rows = {'Close': [201.66, 210.88, 208.97, 222.18, 217.69]}
-        # original = pd.concat([original, pd.DataFrame(new_rows)], ignore_index=True)
         original = original.loc[:len(original)]
         return original
     
@@ -41,8 +39,6 @@ class SetbackStockUtilities:
         df = df.filter(['Return'])
         df = df.dropna()
         df = df.reset_index(drop=True)
-        # new_rows = {'Return': [6.5, -4.5, -1.1, 3.4, -1.4]}
-        # df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
         return df[:-n_future]
     
     @staticmethod
@@ -186,7 +182,6 @@ class SetbackNewStock(SetbackStockUtilities):
         self.train_dataX, self.train_dataY = self.get_training_data(self.scaled_data, self.n_future, self.n_past)
         self.test_data: tf.Tensor = self.get_testing_data(self.scaled_data, self.n_past, self.split)
 
-    # Lowered neurons for faster testing, original structure: 64 and 32 neurons for first and second layers respectively 
     # Get model for predictions
     def get_model(self, type: str | None) -> Sequential:
         model: Sequential = Sequential()
@@ -208,7 +203,6 @@ class SetbackNewStock(SetbackStockUtilities):
             model.compile(optimizer='adam', loss='mse')
         return model
 
-    # Lowered epochs for faster testing, original epochs: 48
     # Fit model to training data
     def fit_model(self, model: Sequential) -> Sequential:
         model.fit(self.train_dataX, self.train_dataY, epochs=52, batch_size=10, verbose=0)
@@ -404,7 +398,6 @@ class NewStock(StockUtilities):
         self.train_dataX, self.train_dataY = self.get_training_data(self.scaled_data, self.n_future, self.n_past)
         self.test_data: tf.Tensor = self.get_testing_data(self.scaled_data, self.n_past, self.split)
 
-    # Lowered neurons for faster testing, original structure: 64 and 32 neurons for first and second layers respectively 
     # Get model for predictions
     def get_model(self, type: str | None) -> Sequential:
         model: Sequential = Sequential()
@@ -426,7 +419,6 @@ class NewStock(StockUtilities):
             model.compile(optimizer='adam', loss='mse')
         return model
 
-    # Lowered epochs for faster testing, original epochs: 48
     # Fit model to training data
     def fit_model(self, model: Sequential) -> Sequential:
         model.fit(self.train_dataX, self.train_dataY, epochs=48, batch_size=10, verbose=0)
